@@ -85,7 +85,7 @@ sub FetchStatus
     $unique .= ".xml";
     
     ### Construct URL
-    my $url = "http://$ip/?mime=xml";
+    my $url = "http://$ip:8004/jkmanager?mime=xml";
     
     ### Fetch XML
     open(FETCH, "wget -q -O /tmp/$unique $url >/dev/null 2>&1 |") || PrintExit("Failed to run wget: $!");
@@ -114,7 +114,7 @@ sub ParseXML
     my $status = XMLin("/tmp/$xml", forcearray => ['jk:member']);
     
     ### Exit if specified balancer wasn't found
-    PrintExit ("Supplied balancer wasn't found!") unless defined ( %{$status->{'jk:balancers'}->{'jk:balancer'}->{$balancer}} );
+    PrintExit ("Supplied balancer wasn't found!") unless %{$status->{'jk:balancers'}->{'jk:balancer'}->{$balancer}} ;
     
     ### Get number of members
     my $member_count = $status->{'jk:balancers'}->{'jk:balancer'}->{$balancer}->{'member_count'};
@@ -132,7 +132,7 @@ sub ParseXML
         }
         elsif ( $activation eq 'ACT' )
         {
-            if ( ($state ne 'OK') && ($state ne 'N/A') )
+            if ( (($state ne 'OK') && ($state ne 'OK/IDLE')) && ($state ne 'N/A') )
             {
                 #print "STATE: $state\n";
                 push (@bad_members, $member);
@@ -146,13 +146,19 @@ sub ParseXML
     
     ### Calaculate possible differnece
     my $good_boys = $member_count - scalar(@bad_members);
-    
+
     if ( $member_count == $good_boys )
     {
         print "All members are fine";
 	unlink("/tmp/$xml") || PrintExit("Could not delete: $!");
         exit 0;
 
+    }
+    elsif ( scalar(@bad_members) le ($member_count/8) )
+    {
+        print scalar(@bad_members), " of $member_count members are down";
+	unlink("/tmp/$xml") || PrintExit("Could not delete: $!");
+        exit 1;
     }
     else
     {
@@ -168,3 +174,4 @@ sub PrintExit
     print $msg;
     exit 1;
 }
+    
