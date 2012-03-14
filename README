@@ -1,0 +1,33 @@
+This is a fork of Daniel "dkerwin" Kerwin's initial work. His original check plugin can be found on his website http://www.linuxaddicted.de
+All credits belong to him, I just made minor modifications to represent some specialties in our environment.
+
+
+License and Header from the check plugin:
+
+
+
+###############################################################################
+##
+## check_jk_status:
+##
+## Check the status for mod_jk's loadbalancers via XML download from status 
+## URL.
+##
+## This program is free software; you can redistribute it and/or modify
+## it under the terms of the GNU General Public License as published by
+## the Free Software Foundation; either version 2 of the License, or
+## (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with this program; if not, write to the Free Software
+## Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+##
+## $Id: $
+##
+###############################################################################
+
