@@ -8,11 +8,13 @@ check_jk_status
 Exit code 0 - OK if all cluster nodes are active and in good state
 Exit code 1 - WARN if less than half of the cluster nodes are in bad state
 Exit code 2 - ERROR if half or more of the cluster nodes are in bad state 
+Exit code 3 - UNKNOWN if we cannot get or parse the xml correctly
 
 check_jk_host
 Exit code 0 - OK if the given cluster node is active and in good state
 Exit code 1 - WARN if the given cluster node is inactive
 Exit code 2 - ERROR if cluster node not found or active and in bad state
+Exit code 3 - UNKNOWN if we cannot get or parse the xml correctly
 
 License and Header from the check plugin:
 
