@@ -50,7 +50,7 @@ GetOptions('balancer-host=s' => \$balancerHost, 'balancer-name=s' => \$balancerN
 if ( ($balancerHost eq '') || ($balancerName eq '') || ($clusterNode eq '') ) {
 	print "\nError: Parameter missing\n";
 	&Usage();
-	exit(1);
+	exit 3;
 }
 
 ## Fetch the status
@@ -88,10 +88,10 @@ sub FetchStatus {
 	my $url = "https://$ip/jkstatus/?mime=xml";
 
 	### Fetch XML
-	open(FETCH, "wget --no-check-certificate -q -O /tmp/$unique $url >/dev/null 2>&1 |") || PrintExit("Failed to run wget: $!");
+	open(FETCH, "wget --no-check-certificate -q -O /tmp/$unique $url >/dev/null 2>&1 |") || PrintUnknown("Failed to run wget: $!");
 	close(FETCH);
 
-	PrintExit("Unable to fetch status XML!") unless ( $?>>8 == 0 );
+	PrintUnknown("Unable to fetch status XML!") unless ( $?>>8 == 0 );
 
 	## Sleep a second
 	sleep(1);
@@ -110,7 +110,7 @@ sub ParseXML {
 	my $status = XMLin("/tmp/$xml", ForceArray => ['jk:member'], ForceArray => ['jk:balancer']);
 
 	### Exit if specified balancer wasn't found
-	PrintExit("Balancer name: $balancerName wasn't found!") unless %{$status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}};
+	PrintUnknown("Balancer name: $balancerName wasn't found!") unless %{$status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}};
 
 	### Check all members
 	foreach my $member ( sort keys %{$status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}->{'jk:member'}} ) {
@@ -134,7 +134,7 @@ sub ParseXML {
 		}
 	}
 	
-	PrintExit("Cluster node: $clusterNode wasn't found!");
+	PrintUnknown("Cluster node: $clusterNode wasn't found!");
 }
 
 sub PrintOK {
@@ -148,14 +148,21 @@ sub PrintWarn {
 	CleanUp();
 	my $msg = shift;
 	print $msg;
-	exit 2;
+	exit 1;
 }
 
 sub PrintExit {
 	CleanUp();
 	my $msg = shift;
 	print $msg;
-	exit 1;
+	exit 2;
+}
+
+sub PrintUnknown {
+	CleanUp();
+	my $msg = shift;
+	print $msg;
+	exit 3;
 }
 
 sub CleanUp {
