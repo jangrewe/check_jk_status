@@ -63,34 +63,33 @@ ParseXML($xml);
 ####################################################
 
 ## Print Usage if not all parameters are supplied
-sub Usage() 
-{
-  print "\nUsage: check_jk_status [PARAMETERS]
+sub Usage() {
+	print "\nUsage: check_jk_status [PARAMETERS]
 
 Parameters:
-  --balancer-host=[HOSTNAME]        : Name or IP address of JK status page
-  --balancer-name=[JK BALANCER] 	: Name of the JK balancer\n\n";
+	--balancer-host=[HOSTNAME]        : Name or IP address of JK status page
+	--balancer-name=[JK BALANCER] 	: Name of the JK balancer\n\n";
 }
 
 ## Fetch the XML from management address
-sub FetchStatus
-{
-    ### Get the ip for connect
-    my $ip = shift;
-    
-    ### Generate unique output file
-    my $unique = `uuidgen`;
-    chomp ($unique);
-    $unique .= ".xml";
-    
-    ### Construct URL
-    my $url = "http://$ip:8004/jkmanager?mime=xml";
-    
-    ### Fetch XML
-    open(FETCH, "wget -q -O /tmp/$unique $url >/dev/null 2>&1 |") || PrintExit("Failed to run wget: $!");
-    close(FETCH);
+sub FetchStatus {
+	
+	### Get the ip for connect
+	my $ip = shift;
 
-    PrintExit ("Unable to fetch status XML!") unless ( $?>>8 == 0 );
+	### Generate unique output file
+	my $unique = `uuidgen`;
+	chomp($unique);
+	$unique .= ".xml";
+
+	### Construct URL
+	my $url = "https://$ip/jkstatus/?mime=xml";
+
+	### Fetch XML
+	open(FETCH, "wget --no-check-certificate -q -O /tmp/$unique $url >/dev/null 2>&1 |") || PrintExit("Failed to run wget: $!");
+	close(FETCH);
+
+	PrintExit ("Unable to fetch status XML!") unless ( $?>>8 == 0 );
     
     ## Sleep a second
     sleep(1);
