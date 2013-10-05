@@ -67,8 +67,8 @@ sub Usage() {
 	print "\nUsage: check_jk_status [PARAMETERS]
 
 Parameters:
-	--balancer-host=[HOSTNAME]		: Name or IP address of JK status page
-	--balancer-name=[JK BALANCER]	: Name of the JK balancer\n\n";
+	--balancer-host=[HOSTNAME]      : Name or IP address of JK status page
+	--balancer-name=[JK BALANCER]   : Name of the JK balancer\n\n";
 }
 
 ## Fetch the XML from management address
