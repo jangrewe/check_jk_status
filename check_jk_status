@@ -89,87 +89,78 @@ sub FetchStatus {
 	open(FETCH, "wget --no-check-certificate -q -O /tmp/$unique $url >/dev/null 2>&1 |") || PrintExit("Failed to run wget: $!");
 	close(FETCH);
 
-	PrintExit ("Unable to fetch status XML!") unless ( $?>>8 == 0 );
-    
-    ## Sleep a second
-    sleep(1);
+	PrintExit("Unable to fetch status XML!") unless ( $?>>8 == 0 );
 
-    ## Return the fetched XML
-    return $unique;
+	## Sleep a second
+	sleep(1);
+
+	## Return the fetched XML
+	return $unique;
 }
 
 ## Parse the XML and return the results
-sub ParseXML
-{
-    ### Get XML to parse
-    my $xml = shift;
-    
-    ### Hash for node status
-    my @good_members = ();
-    my @bad_members = ();
+sub ParseXML {
 
-    ### Convert XML to hash
-    my $status = XMLin("/tmp/$xml", forcearray => ['jk:member']);
-    
-    ### Exit if specified balancer wasn't found
-    PrintExit ("Supplied balancer wasn't found!") unless %{$status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}} ;
-    
-    ### Get number of members
-    my $member_count = $status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}->{'member_count'};
-    
-    ### Check all members
-    foreach my $member ( sort keys %{$status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}->{'jk:member'}} )
-    {
-        ### Check status for every node activation
-        my $activation = $status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}->{'jk:member'}->{$member}->{'activation'};
-        my $state = $status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}->{'jk:member'}->{$member}->{'state'};
-        
-        if ( $activation ne 'ACT' )
-        {
-            push (@bad_members, $member);
-        }
-        elsif ( $activation eq 'ACT' )
-        {
-            if ( (($state ne 'OK') && ($state ne 'OK/IDLE')) && ($state ne 'N/A') )
-            {
-                #print "STATE: $state\n";
-                push (@bad_members, $member);
-            }
-            else
-            {
-                push (@good_members, $member);
-            }
-        }
-    }
-    
-    ### Calaculate possible differnece
-    my $good_boys = $member_count - scalar(@bad_members);
+	### Get XML to parse
+	my $xml = shift;
+	
+	### Hash for node status
+	my @good_members = ();
+	my @bad_members = ();
 
-    if ( $member_count == $good_boys )
-    {
-        print "All members are fine";
-	unlink("/tmp/$xml") || PrintExit("Could not delete: $!");
-        exit 0;
+	### Convert XML to hash
+	my $status = XMLin("/tmp/$xml", ForceArray => ['jk:member'], ForceArray => ['jk:balancer']);
 
-    }
-    elsif ( scalar(@bad_members) le ($member_count/8) )
-    {
-        print scalar(@bad_members), " of $member_count members are down";
-	unlink("/tmp/$xml") || PrintExit("Could not delete: $!");
-        exit 1;
-    }
-    else
-    {
-        print scalar(@bad_members), " of $member_count members are down";
-	unlink("/tmp/$xml") || PrintExit("Could not delete: $!");
-        exit 2;
-    }
+	### Exit if specified balancer wasn't found
+	PrintExit("Supplied balancer wasn't found!") unless %{$status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}};
+
+	### Get number of members
+	my $memberCount = $status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}->{'member_count'};
+
+	### Check all members
+	foreach my $member ( sort keys %{$status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}->{'jk:member'}} ) {
+
+		### Check status for every node activation
+		my $activation = $status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}->{'jk:member'}->{$member}->{'activation'};
+		my $state = $status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}->{'jk:member'}->{$member}->{'state'};
+
+		if ( $activation ne 'ACT' ) {
+			push (@bad_members, $member);
+
+        } elsif ( $activation eq 'ACT' ) {
+			if ( (($state ne 'OK') && ($state ne 'OK/IDLE')) && ($state ne 'N/A') ) {
+				#print "STATE: $state\n";
+				push (@bad_members, $member);
+
+			} else {
+				push (@good_members, $member);
+			}
+		}
+	}
+
+	### Calaculate possible differnece
+	my $good_boys = $memberCount - scalar(@bad_members);
+
+	if ( $memberCount == $good_boys ) {
+		print "All members are fine";
+		unlink("/tmp/$xml") || PrintExit("Could not delete: $!");
+		exit 0;
+
+	} elsif ( scalar(@bad_members) le ($memberCount/8) ) {
+		print scalar(@bad_members), " of $memberCount members are down";
+		unlink("/tmp/$xml") || PrintExit("Could not delete: $!");
+		exit 1;
+
+	} else {
+		print scalar(@bad_members), " of $memberCount members are down";
+		unlink("/tmp/$xml") || PrintExit("Could not delete: $!");
+		exit 2;
+
+	}
 }
 
-sub PrintExit
-{
-    my $msg = shift;
-    print $msg;
-    exit 1;
+sub PrintExit {
+	my $msg = shift;
+	print $msg;
+	exit 1;
 }
-    
