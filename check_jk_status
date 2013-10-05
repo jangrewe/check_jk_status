@@ -126,18 +126,18 @@ sub ParseXML {
 
 		if ( $activation ne 'ACT' ) {
 			push (@bad_members, $member);
-
-        } elsif ( $activation eq 'ACT' ) {
-			if ( (($state ne 'OK') && ($state ne 'OK/IDLE')) && ($state ne 'N/A') ) {
-				push (@bad_members, $member);
-
-			} else {
-				push (@good_members, $member);
-			}
+			next;
 		}
+
+		if ( ($state eq 'OK') || ($state eq 'OK/IDLE') || ($state eq 'N/A') ) {
+			push (@good_members, $member);
+			next;
+		} 
+
+		push (@bad_members, $member);
 	}
 
-	### Calaculate possible differnece
+	### Calculate possible differences
 	my $good_boys = $memberCount - scalar(@bad_members);
 
 	if ( $memberCount == $good_boys ) {
