@@ -67,8 +67,8 @@ sub Usage() {
 	print "\nUsage: check_jk_status [PARAMETERS]
 
 Parameters:
-	--balancer-host=[HOSTNAME]        : Name or IP address of JK status page
-	--balancer-name=[JK BALANCER] 	: Name of the JK balancer\n\n";
+	--balancer-host=[HOSTNAME]		: Name or IP address of JK status page
+	--balancer-name=[JK BALANCER]	: Name of the JK balancer\n\n";
 }
 
 ## Fetch the XML from management address
@@ -129,7 +129,6 @@ sub ParseXML {
 
         } elsif ( $activation eq 'ACT' ) {
 			if ( (($state ne 'OK') && ($state ne 'OK/IDLE')) && ($state ne 'N/A') ) {
-				#print "STATE: $state\n";
 				push (@bad_members, $member);
 
 			} else {
@@ -142,25 +141,37 @@ sub ParseXML {
 	my $good_boys = $memberCount - scalar(@bad_members);
 
 	if ( $memberCount == $good_boys ) {
-		print "All members are fine";
-		unlink("/tmp/$xml") || PrintExit("Could not delete: $!");
-		exit 0;
-
+		PrintOK("All members are fine");
 	} elsif ( scalar(@bad_members) le ($memberCount/8) ) {
-		print scalar(@bad_members), " of $memberCount members are down";
-		unlink("/tmp/$xml") || PrintExit("Could not delete: $!");
-		exit 1;
-
+		PrintExit(scalar(@bad_members) . " of $memberCount members are down.");
 	} else {
-		print scalar(@bad_members), " of $memberCount members are down";
-		unlink("/tmp/$xml") || PrintExit("Could not delete: $!");
-		exit 2;
-
+		PrintWarn(scalar(@bad_members) . " of $memberCount members are down.");
 	}
 }
 
+sub PrintOK {
+	CleanUp();
+	my $msg = shift;
+	print $msg;
+	exit 0;
+}
+
+sub PrintWarn {
+	CleanUp();
+	my $msg = shift;
+	print $msg;
+	exit 2;
+}
+
 sub PrintExit {
+	CleanUp();
 	my $msg = shift;
 	print $msg;
 	exit 1;
+}
+
+sub CleanUp {
+	if ($xml) {
+		unlink("/tmp/$xml") || print "Could not delete: $!\n";
+	}
 }
