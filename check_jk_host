@@ -80,6 +80,8 @@ sub FetchStatus {
 	my $ip = shift;
 
 	### Generate unique output file
+	### Use uuid or any other unique id generate if uuidgen is not available
+	#my $unique = `uuid`;
 	my $unique = `uuidgen`;
 	chomp($unique);
 	$unique .= ".xml";
