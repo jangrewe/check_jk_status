@@ -112,7 +112,7 @@ sub ParseXML {
 	my $status = XMLin("/tmp/$xml", ForceArray => ['jk:member'], ForceArray => ['jk:balancer']);
 
 	### Exit if specified balancer wasn't found
-	PrintExit("Supplied balancer wasn't found!") unless %{$status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}};
+	PrintExit("Balancer name: $balancerName wasn't found!") unless %{$status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}};
 
 	### Get number of members
 	my $memberCount = $status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}->{'member_count'};
@@ -141,11 +141,15 @@ sub ParseXML {
 	my $good_boys = $memberCount - scalar(@bad_members);
 
 	if ( $memberCount == $good_boys ) {
-		PrintOK("All members are fine");
-	} elsif ( scalar(@bad_members) le ($memberCount/8) ) {
-		PrintExit(scalar(@bad_members) . " of $memberCount members are down.");
+		PrintOK("All members are fine.");
+
+	# If half or more of the cluster nodes is in a bad condition it is an Error!
+	} elsif ( scalar(@bad_members) >= ($memberCount / 2) ) {
+		PrintExit(scalar(@bad_members) . " of $memberCount members are down! Not good!");
+
+	# If less than half of the cluster nodes is in a bad condition it is a Warning!
 	} else {
-		PrintWarn(scalar(@bad_members) . " of $memberCount members are down.");
+		PrintWarn(scalar(@bad_members) . " of $memberCount members are down!");
 	}
 }
 
