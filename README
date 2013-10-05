@@ -1,9 +1,6 @@
-This is a fork of Daniel "dkerwin" Kerwin's initial work. His original check plugin can be found on his website http://www.linuxaddicted.de
-All credits belong to him, I just made minor modifications to represent some specialties in our environment.
-
+This is a fork of ZyanKLee work that builds up of the code of Daniel "dkerwin" Kerwin. His original check plugin can be found on his website http://www.linuxaddicted.de
 
 License and Header from the check plugin:
-
 
 
 ###############################################################################
