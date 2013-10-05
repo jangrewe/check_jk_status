@@ -47,7 +47,7 @@ GetOptions('balancer-host=s' => \$balancerHost, 'balancer-name=s' => \$balancerN
 ## Main APP
 ####################################################
 
-if ( ($balancerHost eq '') || ($balancerName eq '') || ($clusterNode eq '') {
+if ( ($balancerHost eq '') || ($balancerName eq '') || ($clusterNode eq '') ) {
 	print "\nError: Parameter missing\n";
 	&Usage();
 	exit(1);
@@ -105,10 +105,6 @@ sub ParseXML {
 
 	### Get XML to parse
 	my $xml = shift;
-	
-	### Hash for node status
-	my @good_members = ();
-	my @bad_members = ();
 
 	### Convert XML to hash
 	my $status = XMLin("/tmp/$xml", ForceArray => ['jk:member'], ForceArray => ['jk:balancer']);
@@ -116,43 +112,29 @@ sub ParseXML {
 	### Exit if specified balancer wasn't found
 	PrintExit("Balancer name: $balancerName wasn't found!") unless %{$status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}};
 
-	### Get number of members
-	my $memberCount = $status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}->{'member_count'};
-
 	### Check all members
 	foreach my $member ( sort keys %{$status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}->{'jk:member'}} ) {
+	
+		my $host = $status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}->{'jk:member'}->{$member}->{'host'};
+		if ( $host eq $clusterNode ) {
+			
+			### Check the status of the cluster node
+			my $activation = $status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}->{'jk:member'}->{$member}->{'activation'};
+			my $state = $status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}->{'jk:member'}->{$member}->{'state'};
 
-		### Check status for every node activation
-		my $activation = $status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}->{'jk:member'}->{$member}->{'activation'};
-		my $state = $status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}->{'jk:member'}->{$member}->{'state'};
+			if ( $activation ne 'ACT' ) {
+				PrintWarn("Cluster Node: $clusterNode not active!");
+			}
 
-		if ( $activation ne 'ACT' ) {
-			push (@bad_members, $member);
-			next;
+			if ( ($state eq 'OK') || ($state eq 'OK/IDLE') || ($state eq 'N/A') ) {
+				PrintOK("Node: $clusterNode active and in state $state");
+			} 
+
+			PrintExit("Node: $clusterNode is active but in state $state!");
 		}
-
-		if ( ($state eq 'OK') || ($state eq 'OK/IDLE') || ($state eq 'N/A') ) {
-			push (@good_members, $member);
-			next;
-		} 
-
-		push (@bad_members, $member);
 	}
-
-	### Calculate possible differences
-	my $good_boys = $memberCount - scalar(@bad_members);
-
-	if ( $memberCount == $good_boys ) {
-		PrintOK("All members are fine.");
-
-	# If half or more of the cluster nodes is in a bad condition it is an Error!
-	} elsif ( scalar(@bad_members) >= ($memberCount / 2) ) {
-		PrintExit(scalar(@bad_members) . " of $memberCount members are down! Not good!");
-
-	# If less than half of the cluster nodes is in a bad condition it is a Warning!
-	} else {
-		PrintWarn(scalar(@bad_members) . " of $memberCount members are down!");
-	}
+	
+	PrintExit("Cluster node: $clusterNode wasn't found!");
 }
 
 sub PrintOK {
