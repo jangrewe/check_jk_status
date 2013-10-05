@@ -2,9 +2,9 @@
 
 ###############################################################################
 ##
-## check_jk_status:
+## check_jk_host:
 ##
-## Check the status for mod_jk's loadbalancers via XML download from status 
+## Check the status of the given cluster node via XML download from status
 ## URL.
 ##
 ## This program is free software; you can redistribute it and/or modify
