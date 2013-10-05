@@ -36,17 +36,17 @@ use Getopt::Long;
 ####################################################
 
 ## Initialize vars
-my $server_ip = '';
-my $balancer  = '';
+my $balancerHost = '';
+my $balancerName  = '';
 
 ## Get user-supplied options
-GetOptions('host=s' => \$server_ip, 'balancer=s' => \$balancer);
+GetOptions('balancer-host=s' => \$balancerHost, 'balancer-name=s' => \$balancerName);
 
 ####################################################
 ## Main APP
 ####################################################
 
-if ( ($server_ip eq '') && ($balancer eq '') )
+if ( ($balancerHost eq '') && ($balancerName eq '') )
 {
   print "\nError: Parameter missing\n";
   &Usage();
@@ -54,7 +54,7 @@ if ( ($server_ip eq '') && ($balancer eq '') )
 }
 
 ## Fetch the status
-my $xml = FetchStatus($server_ip);
+my $xml = FetchStatus($balancerHost);
 
 ## Parse the XML and return the results
 ParseXML($xml);
@@ -69,8 +69,8 @@ sub Usage()
   print "\nUsage: check_jk_status [PARAMETERS]
 
 Parameters:
-  --host=[HOSTNAME]        : Name or IP address of JK management interface
-  --balancer=[JK BALANCER] : Name of the JK balancer\n\n";
+  --balancer-host=[HOSTNAME]        : Name or IP address of JK status page
+  --balancer-name=[JK BALANCER] 	: Name of the JK balancer\n\n";
 }
 
 ## Fetch the XML from management address
@@ -114,17 +114,17 @@ sub ParseXML
     my $status = XMLin("/tmp/$xml", forcearray => ['jk:member']);
     
     ### Exit if specified balancer wasn't found
-    PrintExit ("Supplied balancer wasn't found!") unless %{$status->{'jk:balancers'}->{'jk:balancer'}->{$balancer}} ;
+    PrintExit ("Supplied balancer wasn't found!") unless %{$status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}} ;
     
     ### Get number of members
-    my $member_count = $status->{'jk:balancers'}->{'jk:balancer'}->{$balancer}->{'member_count'};
+    my $member_count = $status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}->{'member_count'};
     
     ### Check all members
-    foreach my $member ( sort keys %{$status->{'jk:balancers'}->{'jk:balancer'}->{$balancer}->{'jk:member'}} )
+    foreach my $member ( sort keys %{$status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}->{'jk:member'}} )
     {
         ### Check status for every node activation
-        my $activation = $status->{'jk:balancers'}->{'jk:balancer'}->{$balancer}->{'jk:member'}->{$member}->{'activation'};
-        my $state = $status->{'jk:balancers'}->{'jk:balancer'}->{$balancer}->{'jk:member'}->{$member}->{'state'};
+        my $activation = $status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}->{'jk:member'}->{$member}->{'activation'};
+        my $state = $status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}->{'jk:member'}->{$member}->{'state'};
         
         if ( $activation ne 'ACT' )
         {
