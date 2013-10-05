@@ -1,0 +1,183 @@
+#!/usr/bin/env perl
+
+###############################################################################
+##
+## check_jk_status:
+##
+## Check the status for mod_jk's loadbalancers via XML download from status 
+## URL.
+##
+## This program is free software; you can redistribute it and/or modify
+## it under the terms of the GNU General Public License as published by
+## the Free Software Foundation; either version 2 of the License, or
+## (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with this program; if not, write to the Free Software
+## Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+##
+## $Id: $
+##
+###############################################################################
+
+use strict;
+use warnings;
+use XML::Simple;
+use Data::Dumper;
+use Getopt::Long;
+
+####################################################
+## Global vars
+####################################################
+
+## Initialize vars
+my $balancerHost = '';
+my $balancerName  = '';
+my $clusterNode = '';
+
+## Get user-supplied options
+GetOptions('balancer-host=s' => \$balancerHost, 'balancer-name=s' => \$balancerName, 'cluster-node=s' => \$clusterNode);
+
+####################################################
+## Main APP
+####################################################
+
+if ( ($balancerHost eq '') || ($balancerName eq '') || ($clusterNode eq '') {
+	print "\nError: Parameter missing\n";
+	&Usage();
+	exit(1);
+}
+
+## Fetch the status
+my $xml = FetchStatus($balancerHost);
+
+## Parse the XML and return the results
+ParseXML($xml);
+
+###################################################
+## Subs / Functions
+####################################################
+
+## Print Usage if not all parameters are supplied
+sub Usage() {
+	print "\nUsage: check_jk_status [PARAMETERS]
+
+Parameters:
+	--balancer-host=[HOSTNAME]      : Name or IP address of JK status page
+	--balancer-name=[JK BALANCER]   : Name of the JK balancer
+	--cluster-node=[HOSTNAME]       : Name of the cluster node to check\n\n";
+}
+
+## Fetch the XML from management address
+sub FetchStatus {
+	
+	### Get the ip for connect
+	my $ip = shift;
+
+	### Generate unique output file
+	my $unique = `uuidgen`;
+	chomp($unique);
+	$unique .= ".xml";
+
+	### Construct URL
+	my $url = "https://$ip/jkstatus/?mime=xml";
+
+	### Fetch XML
+	open(FETCH, "wget --no-check-certificate -q -O /tmp/$unique $url >/dev/null 2>&1 |") || PrintExit("Failed to run wget: $!");
+	close(FETCH);
+
+	PrintExit("Unable to fetch status XML!") unless ( $?>>8 == 0 );
+
+	## Sleep a second
+	sleep(1);
+
+	## Return the fetched XML
+	return $unique;
+}
+
+## Parse the XML and return the results
+sub ParseXML {
+
+	### Get XML to parse
+	my $xml = shift;
+	
+	### Hash for node status
+	my @good_members = ();
+	my @bad_members = ();
+
+	### Convert XML to hash
+	my $status = XMLin("/tmp/$xml", ForceArray => ['jk:member'], ForceArray => ['jk:balancer']);
+
+	### Exit if specified balancer wasn't found
+	PrintExit("Balancer name: $balancerName wasn't found!") unless %{$status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}};
+
+	### Get number of members
+	my $memberCount = $status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}->{'member_count'};
+
+	### Check all members
+	foreach my $member ( sort keys %{$status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}->{'jk:member'}} ) {
+
+		### Check status for every node activation
+		my $activation = $status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}->{'jk:member'}->{$member}->{'activation'};
+		my $state = $status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}->{'jk:member'}->{$member}->{'state'};
+
+		if ( $activation ne 'ACT' ) {
+			push (@bad_members, $member);
+			next;
+		}
+
+		if ( ($state eq 'OK') || ($state eq 'OK/IDLE') || ($state eq 'N/A') ) {
+			push (@good_members, $member);
+			next;
+		} 
+
+		push (@bad_members, $member);
+	}
+
+	### Calculate possible differences
+	my $good_boys = $memberCount - scalar(@bad_members);
+
+	if ( $memberCount == $good_boys ) {
+		PrintOK("All members are fine.");
+
+	# If half or more of the cluster nodes is in a bad condition it is an Error!
+	} elsif ( scalar(@bad_members) >= ($memberCount / 2) ) {
+		PrintExit(scalar(@bad_members) . " of $memberCount members are down! Not good!");
+
+	# If less than half of the cluster nodes is in a bad condition it is a Warning!
+	} else {
+		PrintWarn(scalar(@bad_members) . " of $memberCount members are down!");
+	}
+}
+
+sub PrintOK {
+	CleanUp();
+	my $msg = shift;
+	print $msg;
+	exit 0;
+}
+
+sub PrintWarn {
+	CleanUp();
+	my $msg = shift;
+	print $msg;
+	exit 2;
+}
+
+sub PrintExit {
+	CleanUp();
+	my $msg = shift;
+	print $msg;
+	exit 1;
+}
+
+sub CleanUp {
+	if ($xml) {
+		unlink("/tmp/$xml") || print "Could not delete: $!\n";
+	}
+}
