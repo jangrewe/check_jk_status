@@ -1,7 +1,20 @@
 This is a fork of ZyanKLee work that builds up of the code of Daniel "dkerwin" Kerwin. His original check plugin can be found on his website http://www.linuxaddicted.de
 
-License and Header from the check plugin:
+The following Icinga commands are provided:
+check_jk_status --balancer-host=[HOSTNAME] --balancer-name=[BALANCER_NAME]
+check_jk_host --balancer-host=[HOSTNAME] --balancer-name=[BALANCER_NAME] --cluster-node=[CLUSTER_NODE_HOSTNAME]
 
+check_jk_status
+Exit code 0 - OK if all cluster nodes are active and in good state
+Exit code 1 - WARN if less than half of the cluster nodes are in bad state
+Exit code 2 - ERROR if half or more of the cluster nodes are in bad state 
+
+check_jk_host
+Exit code 0 - OK if the given cluster node is active and in good state
+Exit code 1 - WARN if the given cluster node is inactive
+Exit code 2 - ERROR if cluster node not found or active and in bad state
+
+License and Header from the check plugin:
 
 ###############################################################################
 ##
