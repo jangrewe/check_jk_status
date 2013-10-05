@@ -46,11 +46,10 @@ GetOptions('balancer-host=s' => \$balancerHost, 'balancer-name=s' => \$balancerN
 ## Main APP
 ####################################################
 
-if ( ($balancerHost eq '') && ($balancerName eq '') )
-{
-  print "\nError: Parameter missing\n";
-  &Usage();
-  exit(1);
+if ( ($balancerHost eq '') || ($balancerName eq '') ) {
+	print "\nError: Parameter missing\n";
+	&Usage();
+	exit(1);
 }
 
 ## Fetch the status
