@@ -109,7 +109,7 @@ sub ParseXML {
 	my $xml = shift;
 
 	### Convert XML to hash
-	my $status = XMLin("/tmp/$xml", ForceArray => ['jk:member'], ForceArray => ['jk:balancer']);
+	my $status = XMLin("/tmp/$xml", ForceArray => ['jk:member', 'jk:balancer']);
 
 	### Exit if specified balancer wasn't found
 	PrintUnknown("Balancer name: $balancerName wasn't found!") unless %{$status->{'jk:balancers'}->{'jk:balancer'}->{$balancerName}};
