@@ -37,11 +37,13 @@ use Getopt::Long;
 
 ## Initialize vars
 my $balancerHost = '';
+my $balancerPort = '80';
+my $balancerPath = 'jkstatus';
 my $balancerName  = '';
 my $clusterNode = '';
 
 ## Get user-supplied options
-GetOptions('balancer-host=s' => \$balancerHost, 'balancer-name=s' => \$balancerName, 'cluster-node=s' => \$clusterNode);
+GetOptions('balancer-host=s' => \$balancerHost, 'balancer-port=s' => \$balancerPort, 'balancer-path=s' => \$balancerPath, 'balancer-name=s' => \$balancerName, 'cluster-node=s' => \$clusterNode);
 
 ####################################################
 ## Main APP
@@ -54,7 +56,7 @@ if ( ($balancerHost eq '') || ($balancerName eq '') || ($clusterNode eq '') ) {
 }
 
 ## Fetch the status
-my $xml = FetchStatus($balancerHost);
+my $xml = FetchStatus($balancerHost, $balancerPort, $balancerPath);
 
 ## Parse the XML and return the results
 ParseXML($xml);
@@ -69,6 +71,8 @@ sub Usage() {
 
 Parameters:
 	--balancer-host=[HOSTNAME]      : Name or IP address of JK status page
+	--balancer-port=[PORT]          : Port of JK status page
+	--balancer-path=[PATH]          : Path of JK status page
 	--balancer-name=[JK BALANCER]   : Name of the JK balancer
 	--cluster-node=[HOSTNAME]       : Name of the cluster node to check\n\n";
 }
@@ -76,8 +80,10 @@ Parameters:
 ## Fetch the XML from management address
 sub FetchStatus {
 	
-	### Get the ip for connect
+	### Get the ip, port and path for connect
 	my $ip = shift;
+	my $port = shift;
+    my $path = shift;
 
 	### Generate unique output file
 	### Use uuid or any other unique id generate if uuidgen is not available
@@ -87,7 +93,7 @@ sub FetchStatus {
 	$unique .= ".xml";
 
 	### Construct URL
-	my $url = "https://$ip/jkstatus/?mime=xml";
+	my $url = "http://$ip:$port/$path/?mime=xml";
 
 	### Fetch XML
 	open(FETCH, "wget --no-check-certificate -q -O /tmp/$unique $url >/dev/null 2>&1 |") || PrintUnknown("Failed to run wget: $!");
